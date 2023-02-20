@@ -1,0 +1,44 @@
+[
+  {
+    "id": "123401",
+    "title": "Testing Video 1",
+    "videoUrl": "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_1"
+  },
+  {
+    "id": "123402",
+    "title": "Testing Video 2",
+    "videoUrl": "https://jsoncompare.org/LearningContainer/SampleFiles/Video/MP4/sample-mp4-file.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_2"
+  },
+  {
+    "id": "123403",
+    "title": "Testing Video 3",
+    "videoUrl": "https://jsoncompare.org/LearningContainer/SampleFiles/Video/MP4/Sample-MP4-Video-File-for-Testing.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_3"
+  },
+  {
+    "id": "123404",
+    "title": "Testing Video 4",
+    "videoUrl": "https://filesamples.com/samples/video/mp4/sample_1920x1080.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_4"
+  },
+  {
+    "id": "123405",
+    "title": "Testing Video 5",
+    "videoUrl": "https://filesamples.com/samples/video/mp4/sample_960x400_ocean_with_audio.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_5"
+  },
+  {
+    "id": "123406",
+    "title": "Testing Video 6",
+    "videoUrl": "https://filesamples.com/samples/video/mp4/sample_1280x720_surfing_with_audio.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_6"
+  },
+  {
+    "id": "123407",
+    "title": "Testing Video 7",
+    "videoUrl": "https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+    "videoThumbnail": "@drawable/video_thumbnail_7"
+  }
+]
