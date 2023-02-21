@@ -6,4 +6,5 @@ data class VideoItem (
     var videoUrl : String,
     var videoThumbnail : String,
     var downloaded : Boolean,
+    var fileSize : String,
 ) : java.io.Serializable

@@ -2,28 +2,18 @@ package com.example.videoplayer.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color.red
-import android.graphics.drawable.Drawable
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.videoplayer.R
 import com.example.videoplayer.data.dto.VideoItem
 import com.example.videoplayer.databinding.ItemVideoListBinding
-import com.example.videoplayer.util.FileUtil
-import com.example.videoplayer.util.FileUtil.Companion.formattedFileSizeToDisplay
-import com.google.common.reflect.Reflection.getPackageName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 
 class VideoListAdapter(
@@ -48,7 +38,8 @@ class VideoListAdapter(
         ): Boolean {
             return oldItem.title == newItem.title &&
                     oldItem.videoUrl == newItem.videoUrl &&
-                    oldItem.downloaded == newItem.downloaded
+                    oldItem.downloaded == newItem.downloaded &&
+                    oldItem.fileSize == newItem.fileSize
         }
     }
 
@@ -67,37 +58,30 @@ class VideoListAdapter(
         @SuppressLint("SetTextI18n", "DiscouragedApi", "UseCompatLoadingForDrawables")
         fun bind(item: VideoItem, position: Int) {
 
-            val thumbnailUri = item.videoThumbnail
-            val imageResource: Int = context.resources.getIdentifier(thumbnailUri, null, context.packageName)
-            val res: Drawable = context.resources.getDrawable(imageResource)
-
-            binding.videoThumbnail.setImageDrawable(res)
+//            binding.videoThumbnail.setImageDrawable(res)
+            binding.videoThumbnail.load(item.videoThumbnail)
             binding.videoTitle.text = item.title
-            CoroutineScope(Dispatchers.IO).launch {
-                val fileSize= FileUtil.getVideoFileSizeFromUrl(item.videoUrl)
-                if( fileSize > 0){
-                    binding.videoFileSizeText.text = FileUtil.formattedFileSizeToDisplay(fileSize)
-                }
-            }
+            binding.videoFileSizeText.text = item.fileSize
+
             val loadingLayout = binding.progressBarLayout
             loadingLayout.visibility = View.INVISIBLE
             if (item.downloaded) {
-                // Download
+                // Download Btn
                 binding.downloadBtn.setImageResource(R.drawable.ic_download_done)
-                // Delete
+                // Delete Btn
                 binding.deleteBtn.isVisible = true
                 binding.deleteBtn.setOnClickListener {
                     onItemDeleteClick.onItemDeleteClick(position)
                 }
             } else {
-                // Download
+                // Download Btn
                 binding.downloadBtn.setImageResource(R.drawable.ic_download)
                 binding.downloadBtn.setOnClickListener {
                     val progressText = binding.progressText
                     loadingLayout.visibility = View.VISIBLE
                     onItemDownloadClick.onItemDownloadClick(position,progressText)
                 }
-                // Delete
+                // Delete Btn
                 binding.deleteBtn.isVisible = false
             }
         }

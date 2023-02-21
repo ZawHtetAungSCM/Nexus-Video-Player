@@ -9,5 +9,4 @@ class VideoViewModel() : ViewModel() {
 
     private val _videoItems = MutableLiveData<List<VideoItem>>()
     val videoItems: LiveData<List<VideoItem>> = _videoItems
-
 }

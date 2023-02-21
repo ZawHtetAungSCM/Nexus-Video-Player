@@ -1,27 +1,30 @@
 package com.example.videoplayer.activity
 
 import android.annotation.SuppressLint
+import android.content.Context.CONNECTIVITY_SERVICE
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.getSystemService
 import com.example.videoplayer.adapter.VideoListAdapter
 import com.example.videoplayer.data.dto.DownloadStatus
 import com.example.videoplayer.data.dto.VideoItem
 import com.example.videoplayer.databinding.ActivityMainBinding
 import com.example.videoplayer.ext.showToast
 import com.example.videoplayer.util.FileUtil
+import com.example.videoplayer.util.FileUtil.Companion.formattedFileSizeToDisplay
+import com.example.videoplayer.util.FileUtil.Companion.getVideoFileSizeFromUrlSus
+import com.example.videoplayer.util.ProgressDialog
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONException
-import java.io.BufferedInputStream
-import java.io.FileOutputStream
-import java.net.URL
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
@@ -29,6 +32,7 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
 
     private lateinit var binding: ActivityMainBinding
     var videoList: List<VideoItem>? = null
+    private lateinit var progressDialog: ProgressDialog
     private val listAdapter = VideoListAdapter(this, this, this, this)
 
 
@@ -36,11 +40,16 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        progressDialog = ProgressDialog(this)
 
         videoList = fillListWithSamples(getLocalSampleList())
 
         binding.recyclerView.adapter = listAdapter
         listAdapter.submitList(videoList)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            getAndUpdateVideoFileSize()
+        }
     }
 
     // A method for converting local sample videos list to JSONArray
@@ -68,15 +77,16 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
                 try {
                     val jsonObject = jsonArray.getJSONObject(i)
                     val fileName = FileUtil.getFileNameFromId(jsonObject.getString("id").toInt())
+                    // TODO:: Check Validation
                     val videoItem = VideoItem(
                         id = jsonObject.getString("id").toInt(),
                         title = jsonObject.getString("title"),
                         videoUrl = jsonObject.getString("videoUrl"),
                         videoThumbnail = jsonObject.getString("videoThumbnail"),
-                        downloaded = fileList.contains(fileName)
+                        downloaded = fileList.contains(fileName),
+                        fileSize = ""
                     )
                     videoItemList.add(videoItem)
-
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }
@@ -86,9 +96,39 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
         return videoItemList
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun getAndUpdateVideoFileSize() {
+        if (videoList != null) {
+            videoList?.forEachIndexed { index, item ->
+                if (item.downloaded) {
+                    val fileSize = FileUtil.getDownloadVideoFileSize(this, item.id)
+                    if (fileSize > 0) {
+                        val fileSizeString = FileUtil.formattedFileSizeToDisplay(fileSize)
+                        videoList!![index].fileSize = fileSizeString
+                        listAdapter.notifyItemChanged(index)
+                    }
+                } else {
+                    if (isNetworkAvailable()) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            withContext(Dispatchers.Main) {
+                                val fileSize = getVideoFileSizeFromUrlSus(item.videoUrl).await()
+                                if (fileSize > 0) {
+                                    val fileSizeString = formattedFileSizeToDisplay(fileSize)
+                                    videoList!![index].fileSize = fileSizeString
+                                    listAdapter.notifyItemChanged(index)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onItemClick(videoItem: VideoItem) {
         if (videoItem.downloaded) {
-            val intent = Intent(this@MainActivity, PlayerActivity::class.java)
+            val intent =
+                Intent(this@MainActivity, PlayerActivity::class.java)
             intent.putExtra(PlayerActivity.VIDEO_ITEM, videoItem)
             startActivity(intent)
         } else {
@@ -98,25 +138,31 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
 
     @SuppressLint("Range")
     override fun onItemDownloadClick(position: Int, progressText: TextView) {
-//        downloadVideFile(position,progressText)
-        dowloadFileWithFloaw(position,progressText)
+        if (isNetworkAvailable()) {
+            downloadAndEncryptFileWithFlow(position, progressText)
+        } else {
+            showToast("Network is not Available")
+            listAdapter.notifyItemChanged(position)
+        }
     }
 
-    private fun dowloadFileWithFloaw(position: Int,progressText: TextView) {
-        if (isNetworkAvailable()) {
-            try{
+    private fun downloadAndEncryptFileWithFlow(position: Int, progressText: TextView) {
+        try {
             CoroutineScope(Dispatchers.IO).launch {
-                FileUtil.downloadVideoFileWithFlow(this@MainActivity, videoList?.get(position)!!).collect {
+                FileUtil.downloadEncryptedVideoFile(
+                    this@MainActivity,
+                    videoList?.get(position)!!
+                ).collect {
                     withContext(Dispatchers.Main) {
                         when (it) {
                             is DownloadStatus.Success -> {
-                                Log.d("TestingTT","downloadVideoFile Success: $it")
+                                Log.d("TestingTT", "downloadVideoFile Success: $it")
                                 videoList?.get(position)?.downloaded = true
-                                updateListDataSet()
+                                listAdapter.notifyItemChanged(position)
                             }
                             is DownloadStatus.Error -> {
                                 showToast(it.message)
-                                updateListDataSet()
+                                listAdapter.notifyItemChanged(position)
                             }
                             is DownloadStatus.Progress -> {
                                 progressText.text = "${it.progress}%"
@@ -125,40 +171,16 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
                     }
                 }
             }
-            }catch (e:Exception){
-                val fileName = FileUtil.getFileNameFromId(videoList?.get(position)?.id!!)
-                val fileDir = FileUtil.getDownloadVideoFileDirectory(this@MainActivity)
-                if (FileUtil.isFileExist(fileDir, fileName)) {
-                    FileUtil.deleteDownloadedVideoFile(this@MainActivity, videoList?.get(position)!!)
-                }
-                showToast("Download Video File Fail !")
+        } catch (e: Exception) {
+            val fileName = FileUtil.getFileNameFromId(videoList?.get(position)?.id!!)
+            val fileDir = FileUtil.getDownloadVideoFileDirectory(this@MainActivity)
+            if (FileUtil.isFileExist(fileDir, fileName)) {
+                FileUtil.deleteDownloadedVideoFile(
+                    this@MainActivity,
+                    videoList?.get(position)!!
+                )
             }
-
-        } else {
-            showToast("Network is not Available")
-            updateListDataSet()
-        }
-    }
-
-    private fun downloadVideFile(position: Int,progressText: TextView) {
-        if (isNetworkAvailable()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                withContext(Dispatchers.Main) {
-//                    val result = downloadingProcess(position).await()
-                    progressText.text = "0"
-                    val result = FileUtil.downloadVideoFile(
-                        this@MainActivity,
-                        videoList?.get(position)!!
-                    ).await()
-
-                    progressText.text = "100"
-                    videoList?.get(position)?.downloaded = true
-                    updateListDataSet()
-                }
-            }
-        } else {
-            showToast("Network is not Available")
-            updateListDataSet()
+            showToast("Download Video File Fail !")
         }
     }
 
@@ -205,7 +227,7 @@ class MainActivity : AppCompatActivity(), VideoListAdapter.OnItemClick,
                         videoList?.get(position)!!
                     )
                     videoList?.get(position)?.downloaded = false
-                    updateListDataSet()
+                    listAdapter.notifyItemChanged(position)
                     showToast("Video File is Deleted")
                 }
             }
