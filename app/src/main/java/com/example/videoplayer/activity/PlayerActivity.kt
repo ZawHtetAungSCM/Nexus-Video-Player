@@ -5,19 +5,32 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.example.videoplayer.Constants.Companion.AES_TRANSFORMATION
 import com.example.videoplayer.data.dto.DownloadStatus
 import com.example.videoplayer.data.dto.VideoItem
 import com.example.videoplayer.databinding.ActivityPlayerBinding
 import com.example.videoplayer.ext.showToast
+import com.example.videoplayer.util.EncryptedFileDataSourceFactory
 import com.example.videoplayer.util.FileUtil
+import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.LoadControl
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
+import com.google.android.exoplayer2.extractor.ExtractorsFactory
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import javax.crypto.Cipher
 
 class PlayerActivity : AppCompatActivity() {
 
@@ -38,39 +51,11 @@ class PlayerActivity : AppCompatActivity() {
 
         val videoItem = intent?.extras?.getSerializable(VIDEO_ITEM) as VideoItem?
         if(videoItem!=null){
-            decryptDownloadedFileWithFlow(videoItem)
+            val fileName = FileUtil.getFileNameFromId(videoItem.id!!)
+            val fileDir = FileUtil.getDownloadVideoFileDirectory(this@PlayerActivity)
+            videoFile = FileUtil.getFileNameWithPath(fileDir, fileName)
         }
         playerView = binding.playerView
-    }
-
-    private fun decryptDownloadedFileWithFlow(videoItem: VideoItem) {
-        try {
-            CoroutineScope(Dispatchers.IO).launch {
-                FileUtil.decryptDownloadedVideoFile(this@PlayerActivity, videoItem).collect {
-                    withContext(Dispatchers.Main) {
-                        binding.progressBarLayout.visibility = View.VISIBLE
-                        when (it) {
-                            is DownloadStatus.Success -> {
-                                videoFile = FileUtil.getTempPlayFile(this@PlayerActivity)
-                                restorePlayer()
-                            }
-                            is DownloadStatus.Error -> {
-                                showToast(it.message)
-                            }
-                            is DownloadStatus.Progress -> {
-                                Log.d("TestingTT", "Decrypting : ${it.progress}%")
-                            }
-                        }
-                    }
-                }
-                binding.progressBarLayout.visibility = View.INVISIBLE
-            }
-        } catch (e: Exception) {
-            binding.progressBarLayout.visibility = View.INVISIBLE
-            deleteTempFile()
-            showToast("Somethings Wrong")
-            finish()
-        }
     }
 
     override fun onResume() {
@@ -120,7 +105,33 @@ class PlayerActivity : AppCompatActivity() {
     // A method for preparing the player
     private fun preparePlayer() {
         if(videoFile !=null){
+
+            val bandwidthMeter = DefaultBandwidthMeter()
+            val trackSelector: TrackSelector = DefaultTrackSelector()
+            val loadControl: LoadControl = DefaultLoadControl()
+
+            //TODO:: Fix Build In Key
+            val mSecretKeySpec = FileUtil.getEncryptKeySpec()
+            val mIvParameterSpec = FileUtil.getEncryptIvParamSpec()
+            val mCipher = Cipher.getInstance(AES_TRANSFORMATION)
+            mCipher?.init(Cipher.DECRYPT_MODE, mSecretKeySpec, mIvParameterSpec)
+
+            val dataSourceFactory: DataSource.Factory = EncryptedFileDataSourceFactory(
+                mCipher,
+                mSecretKeySpec,
+                mIvParameterSpec,
+                bandwidthMeter
+            )
+            val extractorsFactory: ExtractorsFactory = DefaultExtractorsFactory()
+
+            val mediaSourceFactory: MediaSource.Factory =
+                DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+
+
             mPlayer = ExoPlayer.Builder(this@PlayerActivity)
+                .setTrackSelector(trackSelector)
+                .setLoadControl(loadControl)
+                .setMediaSourceFactory(mediaSourceFactory)
                 .build()
                 .also { player ->
                     playerView!!.player = player
