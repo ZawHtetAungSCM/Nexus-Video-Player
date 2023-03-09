@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="color_primary">#FF6200EE</color>
+    <color name="color_primary_variant">#FF3700B3</color>
+    <color name="color_secondary">#FF03DAC5</color>
+    <color name="color_secondary_variant">#FF018786</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="red">#e81e1e</color>
+    <color name="gray">#aaaaaa</color>
+    <color name="white_transparent_80">#CCFFFFFF</color>
+    <color name="black_transparent_30">#44000000</color>
+</resources>

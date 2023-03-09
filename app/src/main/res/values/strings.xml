@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Nexus</string>
+
+    <string name="notification_channel_name">Download</string>
+</resources>
