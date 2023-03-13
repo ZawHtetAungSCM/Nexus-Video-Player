@@ -14,18 +14,29 @@ import kotlin.coroutines.CoroutineContext
 class Constants {
     companion object {
 
-        //Error Message
-        @SuppressLint("StaticFieldLeak")
-        var mCurrentActivity: Activity? = null
-
-        // Encryption/Decryption
+        /**
+         * Encryption/Decryption
+         */
         const val AES_ALGORITHM = "AES"
         const val AES_TRANSFORMATION = "AES/CTR/NoPadding"
         const val CHUNKS_SIZE = 4096
         val ENCRYPT_KEY = ("S-C-M-MobileTeam").toByteArray()
 
-        // API URL
+        /**
+         * File
+         */
+        const val TEMP_FILE_NAME = "temp_play_file"
+
+        /**
+         * API URL
+         */
         const val API = "http://172.20.10.70:8080/api/"
+
+        /**
+         * Context Handler
+         */
+        @SuppressLint("StaticFieldLeak")
+        var mCurrentActivity: Activity? = null
 
         // get the current activity for token expire check logout function
         fun getCurrentActivity(): Activity? {
@@ -39,11 +50,16 @@ class Constants {
 
         // check the current activity of network
         fun checkNetwork(): Boolean {
-            val connManager = mCurrentActivity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connManager =
+                mCurrentActivity!!.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val activeNetwork: NetworkInfo? = connManager.activeNetworkInfo
             val isConnected: Boolean = activeNetwork?.isConnectedOrConnecting == true
             if (!isConnected) {
-                Toast.makeText( this.mCurrentActivity, "Network connection is not available", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this.mCurrentActivity,
+                    "Network connection is not available",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             return isConnected
         }
@@ -52,7 +68,7 @@ class Constants {
         fun getContextWithHandler(context: Context, block: () -> Unit): CoroutineContext {
             return Dispatchers.Main + CoroutineExceptionHandler { _, exception ->
                 block()
-                Log.d("getContextWithHandler","Coroutine Exception Handler got $exception")
+                Log.d("getContextWithHandler", "Coroutine Exception Handler got $exception")
                 // Toast.makeText(context, "Connection Error", Toast.LENGTH_SHORT).show()
             }
         }

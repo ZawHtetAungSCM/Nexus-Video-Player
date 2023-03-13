@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:focusable="true"
     android:keepScreenOn="true"
-    tools:context=".activity.PlayerActivity">
+    tools:context=".activity.VideoPlayerActivity">
 
     <com.google.android.exoplayer2.ui.StyledPlayerView
         android:id="@+id/player_view"

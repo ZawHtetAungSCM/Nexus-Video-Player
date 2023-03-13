@@ -5,10 +5,19 @@
     <color name="color_secondary">#FF03DAC5</color>
     <color name="color_secondary_variant">#FF018786</color>
 
+    <color name="red">#e81e1e</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="red">#e81e1e</color>
-    <color name="gray">#aaaaaa</color>
+    <color name="light">#FFF0F0F0</color>
+    <color name="gray_100">#FFE6E6E6</color>
+    <color name="gray_200">#FFCCCCCC</color>
+    <color name="gray_300">#FFB3B3B3</color>
+    <color name="gray_400">#FF999999</color>
+    <color name="gray_500">#FF808080</color>
+    <color name="gray_600">#FF666666</color>
+    <color name="gray_700">#FF4D4D4D</color>
+    <color name="gray_800">#FF333333</color>
+    <color name="gray_900">#FF1A1A1A</color>
     <color name="white_transparent_80">#CCFFFFFF</color>
     <color name="black_transparent_30">#44000000</color>
 </resources>

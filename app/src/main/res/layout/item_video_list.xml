@@ -30,7 +30,7 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/roundedImageView"
-                android:background="@color/gray"
+                android:background="@color/gray_300"
                 tools:ignore="ContentDescription" />
         </FrameLayout>
 

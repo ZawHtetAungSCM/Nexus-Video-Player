@@ -2,4 +2,13 @@
     <string name="app_name">Nexus</string>
 
     <string name="notification_channel_name">Download</string>
+    <string name="title_activity_bottom_tab">BottomTabActivity</string>
+
+    <string name="title_home">Home</string>
+    <string name="title_video">Video</string>
+    <string name="title_audio">Audio</string>
+    <string name="title_pdf">PDF</string>
+    <string name="title_csv">CSV</string>
+
+    <string name="pdf_page_counter">%d / %d</string>
 </resources>

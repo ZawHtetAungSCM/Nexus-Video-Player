@@ -4,8 +4,7 @@ import android.content.Context
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.example.videoplayer.Constants
-import com.example.videoplayer.data.dto.VideoList
-import com.google.gson.JsonObject
+import com.example.videoplayer.data.dto.ItemList
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -48,5 +47,5 @@ interface RetrofitService {
     }
 
     @GET("videos")
-    suspend fun getVideoList(): Response<VideoList>
+    suspend fun getVideoList(): Response<ItemList>
 }

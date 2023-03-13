@@ -2,39 +2,27 @@ package com.example.videoplayer.activity
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import com.example.videoplayer.Constants.Companion.AES_TRANSFORMATION
+import com.example.videoplayer.Constants
 import com.example.videoplayer.data.dto.DownloadStatus
-import com.example.videoplayer.data.dto.VideoItem
-import com.example.videoplayer.databinding.ActivityPlayerBinding
+import com.example.videoplayer.data.dto.ItemDto
+import com.example.videoplayer.databinding.ActivityVideoPlayerBinding
 import com.example.videoplayer.ext.showToast
-import com.example.videoplayer.util.EncryptedFileDataSourceFactory
+import com.example.videoplayer.model.FileType
 import com.example.videoplayer.util.FileUtil
-import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.LoadControl
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
-import com.google.android.exoplayer2.extractor.ExtractorsFactory
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.StyledPlayerView
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import javax.crypto.Cipher
 
-class PlayerActivity : AppCompatActivity() {
+class VideoPlayerActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityPlayerBinding
+    private lateinit var binding: ActivityVideoPlayerBinding
     private var playerView: StyledPlayerView? = null
     private var videoFile: File? = null
 
@@ -44,34 +32,34 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityPlayerBinding.inflate(layoutInflater)
+        binding = ActivityVideoPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        Constants.setCurrentActivity(this)
         window.decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
-
-        val videoItem = intent?.extras?.getSerializable(VIDEO_ITEM) as VideoItem?
+        val videoItem = intent?.extras?.getSerializable(VIDEO_ITEM) as ItemDto?
         if (videoItem != null) {
             decryptDownloadedFileWithFlow(videoItem)
         }
         playerView = binding.playerView
     }
 
-    private fun decryptDownloadedFileWithFlow(videoItem: VideoItem) {
+    private fun decryptDownloadedFileWithFlow(videoItem: ItemDto) {
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                FileUtil.decryptDownloadedVideoFile(this@PlayerActivity, videoItem).collect {
+                FileUtil.decryptDownloadedVideoFile(this@VideoPlayerActivity, videoItem).collect {
                     withContext(Dispatchers.Main) {
                         binding.progressBarLayout.visibility = View.VISIBLE
                         when (it) {
                             is DownloadStatus.Success -> {
-                                videoFile = FileUtil.getTempPlayFile(this@PlayerActivity)
+                                videoFile = FileUtil.getTemporaryFile(this@VideoPlayerActivity, videoItem.fileType)
                                 restorePlayer()
                             }
                             is DownloadStatus.Error -> {
                                 showToast(it.message)
                             }
                             is DownloadStatus.Progress -> {
-                                Log.d("TestingTT", "Decrypting : ${it.progress}%")
+                                // Log.d("TestingTT", "Decrypting : ${it.progress}%")
                             }
                         }
                     }
@@ -105,7 +93,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun deleteTempFile() {
-        val file = FileUtil.getTempPlayFile(this@PlayerActivity)
+        val file = FileUtil.getTemporaryFile(this@VideoPlayerActivity,FileType.VIDEO)
         if (file.exists()) {
             file.delete()
         }
@@ -133,7 +121,7 @@ class PlayerActivity : AppCompatActivity() {
     // A method for preparing the player
     private fun preparePlayer() {
         if (videoFile != null) {
-            mPlayer = ExoPlayer.Builder(this@PlayerActivity)
+            mPlayer = ExoPlayer.Builder(this@VideoPlayerActivity)
                 .build()
                 .also { player ->
                     playerView!!.player = player
@@ -152,7 +140,7 @@ class PlayerActivity : AppCompatActivity() {
     // A method for releasing the player (should be called when application is closed or minimized for example)
     private fun releasePlayer() {
         if (mPlayer != null) {
-            mPlayerPosition = mPlayer!!.getCurrentPosition()
+            mPlayerPosition = mPlayer!!.currentPosition
             mPlayer!!.release()
             mPlayer = null
             mPlayerStartOnPrepared = false

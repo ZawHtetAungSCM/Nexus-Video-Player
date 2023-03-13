@@ -12,29 +12,28 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.videoplayer.R
-import com.example.videoplayer.data.dto.VideoItem
+import com.example.videoplayer.data.dto.ItemDto
 import com.example.videoplayer.databinding.ItemVideoListBinding
-
 
 class VideoListAdapter(
     private val context: Context,
     private val onItemClick: OnItemClick,
     private val onItemDownloadClick: OnItemDownloadClickListener,
     private val onItemDeleteClick: OnItemDeleteClickListener,
-) : ListAdapter<VideoItem,
+) : ListAdapter<ItemDto,
         VideoListAdapter.VideListViewHolder>(DiffCallback) {
 
-    companion object DiffCallback : DiffUtil.ItemCallback<VideoItem>() {
+    companion object DiffCallback : DiffUtil.ItemCallback<ItemDto>() {
         override fun areItemsTheSame(
-            oldItem: VideoItem,
-            newItem: VideoItem
+            oldItem: ItemDto,
+            newItem: ItemDto
         ): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(
-            oldItem: VideoItem,
-            newItem: VideoItem
+            oldItem: ItemDto,
+            newItem: ItemDto
         ): Boolean {
             return oldItem.title == newItem.title &&
 //                    oldItem.videoUrl == newItem.videoUrl &&
@@ -56,7 +55,7 @@ class VideoListAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n", "DiscouragedApi", "UseCompatLoadingForDrawables")
-        fun bind(item: VideoItem, position: Int) {
+        fun bind(item: ItemDto, position: Int) {
 
 //            binding.videoThumbnail.setImageDrawable(res)
             binding.videoThumbnail.load(item.thumbnail)
@@ -111,7 +110,7 @@ class VideoListAdapter(
     // Click item action
     // Click item action
     interface OnItemClick {
-        fun onItemClick(videoItem: VideoItem)
+        fun onItemClick(videoItem: ItemDto)
     }
     interface OnItemDownloadClickListener {
         fun onItemDownloadClick(position : Int, progressText: TextView)
